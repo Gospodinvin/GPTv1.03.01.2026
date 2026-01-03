@@ -2,7 +2,6 @@
 from binance_data import get_candles as get_candles_binance
 from twelve_data import get_client
 import logging
-from binance.spot import Spot  # Новый для real-time price
 
 def get_candles(symbol: str, interval: str = "1m", limit: int = 70):
     original_symbol = symbol.upper()
@@ -43,9 +42,9 @@ def get_candles(symbol: str, interval: str = "1m", limit: int = 70):
             if candles:
                 logging.info(f"Успешно получены данные через Binance ({len(candles)} свечей)")
                 # Real-time update: обновляем close последней свечи текущей ценой
-                spot_client = Spot()
-                current_price = float(spot_client.ticker_price(binance_symbol)['price'])
-                candles[-1]['close'] = current_price
+                # spot_client = Spot()
+                # current_price = float(spot_client.ticker_price(binance_symbol)['price'])
+                # candles[-1]['close'] = current_price
                 return candles
         except Exception as e:
             logging.error(f"Binance не сработал для {binance_symbol}: {e}")
@@ -61,5 +60,6 @@ def get_candles(symbol: str, interval: str = "1m", limit: int = 70):
                 return candles
         except Exception as e:
             logging.error(f"Binance не сработал и для оригинального символа {original_symbol}: {e}")
+
 
     raise RuntimeError("Не удалось получить данные ни с Twelve Data, ни с Binance")
