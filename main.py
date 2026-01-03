@@ -1,3 +1,4 @@
+import os
 from io import BytesIO
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, CallbackQuery
@@ -82,64 +83,49 @@ async def callback_handler(cb: CallbackQuery):
         return
 
 async def send_result(message: Message, res: dict):
-    growth_percent = int(res["up_prob"] * 100)
-    down_percent = int(res["down_prob"] * 100)
-    neutral_percent = int(res["neutral_prob"] * 100)
+    recommendation = "🟢 BUY" if res["prob"] > 0.6 else "🔴 SELL" if res["prob"] < 0.4 else "⚪ Нейтрал"
+    color = "🟢" if res["prob"] > 0.6 else "🔴" if res["prob"] < 0.4 else "⚪"
 
-    # Определяем рекомендацию с weak/strong
-    threshold_strong = 0.65
-    threshold_weak = 0.55
-    if res["up_prob"] >= threshold_strong:
-        recommendation = "🟢 **STRONG BUY** (Покупать уверенно)"
-        color = "🟢"
-    elif res["up_prob"] >= threshold_weak:
-        recommendation = "🟡 **WEAK BUY** (Возможный рост на 0.05-0.1%)"
-        color = "🟡"
-    elif res["down_prob"] >= threshold_strong:
-        recommendation = "🔴 **STRONG SELL** (Продавать уверенно)"
-        color = "🔴"
-    elif res["down_prob"] >= threshold_weak:
-        recommendation = "🟠 **WEAK SELL** (Возможное падение на 0.05-0.1%)"
-        color = "🟠"
-    else:
-        recommendation = "⚪ **HOLD** (Нейтрал / Шум)"
-        color = "⚪"
+    growth_percent = round(res.get("up_prob", 0) * 100, 1)
+    down_percent = round(res.get("down_prob", 0) * 100, 1)
+    neutral_percent = round(res.get("neutral_prob", 0) * 100, 1)
 
-    txt = (
-        f"📊 **{res['symbol']} | {res['tf']} мин**\n\n"
-        f"{color} **Рекомендация:** {recommendation}\n"
-        f"Рост (1–2 свечи): **{growth_percent}%**\n"
-        f"Падение: **{down_percent}%**\n"
-        f"Нейтрал: **{neutral_percent}%**\n"
-        f"Уверенность: **{res['confidence']}** ({res['confidence_score']})\n"
-        f"Режим рынка: {res['regime'].capitalize()}\n"
-        f"Источник: {res['source']}\n"
+    # HTML-форматирование — безопасно и красиво
+    html_txt = (
+        f"📊 <b>{res['symbol']} | {res['tf']} мин</b>\n\n"
+        f"{color} <b>Рекомендация:</b> {recommendation}\n"
+        f"Рост (1–2 свечи): <b>{growth_percent}%</b>\n"
+        f"Падение: <b>{down_percent}%</b>\n"
+        f"Нейтрал: <b>{neutral_percent}%</b>\n"
+        f"Уверенность: <b>{res['confidence']}</b> ({res['confidence_score']})\n"
+        f"Режим рынка: <b>{res['regime'].capitalize()}</b>\n"
+        f"Источник: <i>{res['source']}</i>\n"
     )
 
     if res.get("quality", 1.0) < 0.9:
-        txt += f"⚠ Качество скрина: {res['quality']:.2f} (может влиять на точность)\n"
+        html_txt += f"⚠ <b>Качество скрина:</b> {res['quality']:.2f} (может влиять на точность)\n"
 
     if res["patterns"]:
-        txt += f"🔥 Паттерны: {', '.join(res['patterns'])}\n"
+        html_txt += f"🔥 <b>Паттерны:</b> {', '.join(res['patterns'])}\n"
 
     ind = res.get("indicators", {})
-    txt += (
-        f"\n📈 Индикаторы:\n"
-        f"• RSI: {ind.get('rsi', 50):.1f}\n"
-        f"• Stoch: {ind.get('stoch', 50):.1f}\n"
-        f"• ADX (сила тренда): {ind.get('adx', 20):.1f}\n"
-        f"• MACD: {ind.get('macd', 0):.5f}\n"
-        f"• Bollinger: {ind.get('bb', 'neutral').capitalize()}\n"
-        f"• ATR: {ind.get('atr', 0.01):.4f}\n"
-        f"• CCI: {ind.get('cci', 0):.1f}\n"
-        f"• PSAR: {ind.get('psar', 'neutral').capitalize()}\n"
-        f"• ROC: {ind.get('roc', 0):.2f}\n"  # Новый
-        f"• OBV: {ind.get('obv', 0):.0f}\n"  # Новый
+    html_txt += (
+        f"\n📈 <b>Индикаторы:</b>\n"
+        f"• RSI: <code>{ind.get('rsi', 50):.1f}</code>\n"
+        f"• Stoch: <code>{ind.get('stoch', 50):.1f}</code>\n"
+        f"• ADX (сила тренда): <code>{ind.get('adx', 20):.1f}</code>\n"
+        f"• MACD: <code>{ind.get('macd', 0):.5f}</code>\n"
+        f"• Bollinger: <code>{ind.get('bb', 'neutral').capitalize()}</code>\n"
+        f"• ATR: <code>{ind.get('atr', 0.01):.4f}</code>\n"
+        f"• CCI: <code>{ind.get('cci', 0):.1f}</code>\n"
+        f"• PSAR: <code>{ind.get('psar', 'neutral').capitalize()}</code>\n"
+        f"• ROC: <code>{ind.get('roc', 0):.2f}</code>\n"
+        f"• OBV: <code>{ind.get('obv', 0):.0f}</code>\n"
     )
 
-    txt += "\n⚠ **Не финансовая рекомендация! Торгуйте на свой страх и риск. SL рекомендуется на уровне ATR*2.**"
+    html_txt += "\n⚠️ <b>Не финансовая рекомендация!</b> Торгуйте на свой страх и риск. SL рекомендуется на уровне ATR×2."
 
-    await message.answer(txt, parse_mode="Markdown")
+    await message.answer(html_txt, parse_mode="HTML")
 
 def main():
     bot = Bot(TELEGRAM_BOT_TOKEN)
@@ -166,4 +152,5 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
