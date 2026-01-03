@@ -90,7 +90,6 @@ async def send_result(message: Message, res: dict):
     down_percent = round(res.get("down_prob", 0) * 100, 1)
     neutral_percent = round(res.get("neutral_prob", 0) * 100, 1)
 
-    # HTML-форматирование — безопасно и красиво
     html_txt = (
         f"📊 <b>{res['symbol']} | {res['tf']} мин</b>\n\n"
         f"{color} <b>Рекомендация:</b> {recommendation}\n"
@@ -113,7 +112,7 @@ async def send_result(message: Message, res: dict):
         f"\n📈 <b>Индикаторы:</b>\n"
         f"• RSI: <code>{ind.get('rsi', 50):.1f}</code>\n"
         f"• Stoch: <code>{ind.get('stoch', 50):.1f}</code>\n"
-        f"• ADX (сила тренда): <code>{ind.get('adx', 20):.1f}</code>\n"
+        f"• ADX: <code>{ind.get('adx', 20):.1f}</code>\n"
         f"• MACD: <code>{ind.get('macd', 0):.5f}</code>\n"
         f"• Bollinger: <code>{ind.get('bb', 'neutral').capitalize()}</code>\n"
         f"• ATR: <code>{ind.get('atr', 0.01):.4f}</code>\n"
@@ -125,7 +124,12 @@ async def send_result(message: Message, res: dict):
 
     html_txt += "\n⚠️ <b>Не финансовая рекомендация!</b> Торгуйте на свой страх и риск. SL рекомендуется на уровне ATR×2."
 
-    await message.answer(html_txt, parse_mode="HTML")
+    # Кнопка "Назад"
+    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+    back_button = InlineKeyboardButton(text="🔙 Назад к рынкам", callback_data="back:markets")
+    back_kb = InlineKeyboardMarkup(inline_keyboard=[[back_button]])
+
+    await message.answer(html_txt, parse_mode="HTML", reply_markup=back_kb)
 
 def main():
     bot = Bot(TELEGRAM_BOT_TOKEN)
@@ -152,5 +156,6 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
