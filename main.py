@@ -128,7 +128,7 @@ async def callback_handler(cb: CallbackQuery):
         logging.info(f"Выбран TF: {tf}")
         await state.set(user_id, "tf", tf)
 
-        res, err = await analyze(user_id, state, cb.bot)
+        res, err = await analyze(user_id, state)
         if err:
             await cb.message.answer(f"Ошибка: {err}")
         else:
@@ -143,7 +143,7 @@ async def callback_handler(cb: CallbackQuery):
         await state.set(user_id, "tf", tf)
         await state.set(user_id, "mode", "api")
 
-        res, err = await analyze(user_id, state, cb.bot)
+        res, err = await analyze(user_id, state)
         if err:
             await cb.message.edit_text(f"Ошибка при обновлении: {err}")
         else:
@@ -183,3 +183,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
