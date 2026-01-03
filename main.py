@@ -156,11 +156,13 @@ def main():
         return "OK", 200
 
     def run_flask():
-        app.run(host='0.0.0.0', port=8080)
+    port = int(os.environ.get("PORT", 8080))  # Ключевая строка!
+    app.run(host="0.0.0.0", port=port)
 
     threading.Thread(target=run_flask).start()
 
     dp.run_polling(bot)
 
 if __name__ == "__main__":
+
     main()
